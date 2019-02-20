@@ -18,14 +18,16 @@
         <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
         <![endif]-->
         <style>
-            
             .table-fixed .th-lower {
                 position: sticky;
                   position: -webkit-sticky;
-                  top: 39;
+                  top: 38;
                   z-index: 999;
                   background-color: #aaa;
+                  border-color: #aaa;
                   height: 40;
+                  border-bottom: 0px !important;
+                  border-top: 0px !important;
             }
 
             .table-fixed thead {
@@ -34,6 +36,9 @@
                 top: 0;
                 z-index: 999;
                 background-color: #aaa;
+                border-color: #aaa;
+                border-bottom: 0px !important;
+                border-top: 0px !important;
               }
               
               /*This will work on every browser*/
@@ -43,6 +48,14 @@
                   top: 0;
                   z-index: 999;
                   background-color: #aaa;
+                  border-color: #aaa;
+                  border-bottom: 0px !important;
+                  border-top: 0px !important;
+              }
+
+              .table-fixed tr th {
+                border-bottom: 0px !important;
+                border-top: 0px !important;
               }
         </style>
         <script>
