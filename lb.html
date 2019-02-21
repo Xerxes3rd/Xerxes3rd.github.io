@@ -18,19 +18,7 @@
         <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
         <![endif]-->
         <style>
-            .table-fixed .th-lower {
-                position: sticky;
-                position: -webkit-sticky;
-                top: 38;
-                z-index: 999;
-                background-color: #aaa;
-                border-color: #aaa;
-                height: 40;
-                border-bottom: 0px !important;
-                border-top: 0px !important;
-            }
-
-            .table-fixed thead {
+            .table-fixed th {
                 position: sticky;
                 position: -webkit-sticky;
                 top: 0;
@@ -39,23 +27,14 @@
                 border-color: #aaa;
                 border-bottom: 0px !important;
                 border-top: 0px !important;
-              }
-              
-              .table-fixed thead th {
-                  position: sticky;
-                  position: -webkit-sticky;
-                  top: 0;
-                  z-index: 999;
-                  background-color: #aaa;
-                  border-color: #aaa;
-                  border-bottom: 0px !important;
-                  border-top: 0px !important;
-              }
+                transform: translate3d(0,0,0);
+            }
 
-              .table-fixed tr th {
-                border-bottom: 0px !important;
-                border-top: 0px !important;
-              }
+            .table-fixed .th-lower {
+                top: 38;
+                height: 40;
+                transform: translate3d(0,0,0);
+            }
         </style>
         <script>
             const weekClassName = "weekClass";
@@ -910,7 +889,7 @@
             <table class="table table-striped" id="scoresTable">
                 <thead>
                     <tr id="scoresTableHeader">
-                        <th rowSpan="2" id="columnHeaderNumber">#</th>
+                        <th rowSpan="2" id="columnHeaderNumber" onclick="toggleStickyHeaders()">#</th>
                         <th rowSpan="2" id="columnHeaderName" onclick="sortTableByID(columnHeaderName, true)">Name</th>
                         <th rowSpan="2" id="columnHeaderTotalPoints" onclick="sortTableByID(columnHeaderTotalPoints)">Total Points</th>
                         <th rowspan="2" class="customExtraData" style="display:none" id="columnHeaderAvgMatch" onclick="sortTableByID(columnHeaderAvgMatch)">Avg. Match</th>
