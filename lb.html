@@ -18,7 +18,6 @@
         <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
         <![endif]-->
         <style>
-            /*
             .table-fixed .th-lower {
                 position: sticky;
                 position: -webkit-sticky;
@@ -57,11 +56,11 @@
                 border-bottom: 0px !important;
                 border-top: 0px !important;
               }
-              */
         </style>
         <script>
             const weekClassName = "weekClass";
             const customExtraDataName = "customExtraData";
+            
             var baseURL = "https://app.worldaxethrowingleague.com/api/";
             var leaderboardURL = baseURL + "player-leaderboard";
             var companiesURL = baseURL + "companies";
@@ -91,6 +90,7 @@
 
             var weekOrderHighLow = false;
             var showExtraColumns = false;
+            var stickyHeaders = false;
 
             function parseQuery(search)
             {
@@ -195,10 +195,52 @@
                 {
                     showExtraColumns = true;
                 }
+                
+                if ("sticky" in search)
+                {
+                    toggleStickyHeaders();
+                }
 
                 showHideExtraColumns();
 
                 getCompanies();
+            }
+
+            function toggleStickyHeaders()
+            {
+                var enable = false;
+
+                var tableDIV = document.getElementById("mainTableDIV");
+                var selectorsDIV = document.getElementById("selectors");
+
+                var node1;
+                var node2;
+
+                if (selectorsDIV.previousElementSibling == null)
+                {
+                    node1 = selectorsDIV;
+                    node2 = tableDIV;
+                }
+                else if (tableDIV.previousElementSibling == null)
+                {
+                    node1 = tableDIV;
+                    node2 = selectorsDIV;
+                }
+
+                if ((node1 != null) && (node2 != null))
+                {
+                    node1.parentNode.replaceChild(node1, node2);
+                    node1.parentNode.insertBefore(node2, node1);
+
+                    if (node1 == tableDIV)
+                    {
+                        document.getElementById("scoresTable").classList.remove("table-fixed");
+                    }
+                    else
+                    {
+                        document.getElementById("scoresTable").classList.add("table-fixed");
+                    }
+                }
             }
 
             function showHideExtraColumns()
@@ -731,31 +773,31 @@
                 }
             }
 
-            function sortTableByID(idName, isText, asc)
+            function sortTableByID(idName, isText)
             {
                 //var elem = document.getElementById(idName);
 
                 if (idName != null)
                 {
-                    sortTable(idName.cellIndex, isText, asc);
+                    sortTable(idName.cellIndex, isText);
                 }
             }
 
             var lastColSortNum = -1;
             var lastColSortAsc = true;
 
-            function sortTable(n, isText, asc) 
+            function sortTable(n, isText) 
             {
-                var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+                var table, rows, switching, i, x, y, shouldSwitch, switchcount = 0;
                 table = document.getElementById("scoresTableBody");
                 switching = true;
 
-                dir = asc ? "asc" : "desc";
+                var asc = isText ? true : false;
                 if (lastColSortNum == n)
-                    dir = (lastColSortAsc == "asc") ? "desc" : "asc";
+                    asc = lastColSortAsc ? false : true;
 
                 lastColSortNum = n;
-                lastColSortAsc = dir;
+                lastColSortAsc = asc;
                 
                 /* Make a loop that will continue until
                 no switching has been done: */
@@ -774,7 +816,7 @@
                         y = rows[i + 1].getElementsByTagName("TD")[n];
                         /* Check if the two rows should switch place,
                         based on the direction, asc or desc: */
-                        if (dir == "asc") {
+                        if (asc) {
                             if (((isText) &&
                                 (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase())) ||
                                 (Number(x.innerHTML) > Number(y.innerHTML))) {
@@ -782,7 +824,7 @@
                                 shouldSwitch = true;
                                 break;
                             }
-                        } else if (dir == "desc") {
+                        } else {
                             if (((isText) &&
                                 (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase())) ||
                                 (Number(x.innerHTML) < Number(y.innerHTML))) {
@@ -802,10 +844,28 @@
                     } else {
                         /* If no switching has been done AND the direction is "asc",
                         set the direction to "desc" and run the while loop again. */
-                        if (switchcount == 0 && dir == "asc") {
-                            dir = "desc";
+                        if (switchcount == 0 && asc) {
+                            asc = false;
                             switching = true;
                         }
+                    }
+                }
+
+                renumberRows(isText ? asc : !asc);
+            }
+
+            function renumberRows(asc)
+            {
+                var table = document.getElementById("scoresTableBody");
+                var rows = table.rows;
+                if (document.getElementById("columnHeaderNumber") != null)
+                {
+                    var colnum = document.getElementById("columnHeaderNumber").cellIndex;
+
+                    for (i = 0; i < rows.length; i++) {
+                        var row = rows[i];
+                        var num = asc ? i + 1 : rows.length - i;
+                        row.cells[colnum].innerHTML = num;
                     }
                 }
             }
@@ -828,12 +888,30 @@
         </script>
     </head>
     <body onload="onBodyLoad()">
+        <div class="container-fluid" id="selectors">
+            <div class="col">
+                <div class="form-inline">
+                    <select class="form-control" id="companiesSelect" onchange="companiesSelectChanged()">
+                        <option text="Select company"></option>
+                    </select>
+                    <select class="form-control" id="locationSelect" onchange="locationSelectChanged()">
+                        <option text="Select location"></option>
+                    </select>
+                    <select class="form-control" id="seasonSelect" onchange="seasonSelectChanged()">
+                        <option text="Select season"></option>
+                    </select>
+                    <select class="form-control" id="yearSelect" onchange="yearSelectChanged()">
+                        <option text="Select year"></option>
+                    </select>
+                </div>
+            </div>
+        </div>
         <div class="container-fluid tableFixHead" id="mainTableDIV">
-            <table class="table table-striped table-fixed" id="scoresTable">
+            <table class="table table-striped" id="scoresTable">
                 <thead>
                     <tr id="scoresTableHeader">
-                        <th rowSpan="2" id="columnHeaderNumber" onclick="sortTableByID(columnHeaderNumber, false, true)">#</th>
-                        <th rowSpan="2" id="columnHeaderName" onclick="sortTableByID(columnHeaderName, true, true)">Name</th>
+                        <th rowSpan="2" id="columnHeaderNumber">#</th>
+                        <th rowSpan="2" id="columnHeaderName" onclick="sortTableByID(columnHeaderName, true)">Name</th>
                         <th rowSpan="2" id="columnHeaderTotalPoints" onclick="sortTableByID(columnHeaderTotalPoints)">Total Points</th>
                         <th rowspan="2" class="customExtraData" style="display:none" id="columnHeaderAvgMatch" onclick="sortTableByID(columnHeaderAvgMatch)">Avg. Match</th>
                         <th rowspan="2" class="customExtraData" style="display:none" id="columnHeaderAvgThrow" onclick="sortTableByID(columnHeaderAvgThrow)">Avg. Throw</th>
@@ -849,23 +927,5 @@
                 </tbody>
             </table>
         </div>
-        <div class="container-fluid" id="selectors">
-                <div class="col">
-                    <div class="form-inline">
-                        <select class="form-control" id="companiesSelect" onchange="companiesSelectChanged()">
-                            <option text="Select company"></option>
-                        </select>
-                        <select class="form-control" id="locationSelect" onchange="locationSelectChanged()">
-                            <option text="Select location"></option>
-                        </select>
-                        <select class="form-control" id="seasonSelect" onchange="seasonSelectChanged()">
-                            <option text="Select season"></option>
-                        </select>
-                        <select class="form-control" id="yearSelect" onchange="yearSelectChanged()">
-                            <option text="Select year"></option>
-                        </select>
-                    </div>
-                </div>
-            </div>
     </body>
 </html>
