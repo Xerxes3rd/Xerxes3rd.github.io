@@ -612,12 +612,15 @@
                 var tableColumns = table.children;
                 var columnCount = tableColumns.length;
                 var startCol = 0;//startingColumn;
-                for (var x=columnCount-1; x>=startCol; x--)
+                if (columnCount > 0)
                 {
-                    if (tableColumns[x].classList.contains(weekClassName))
-                        table.removeChild(tableColumns[x]);
+                    for (var x=columnCount-1; x>=startCol; x--)
+                    {
+                        if (tableColumns[x].classList.contains(weekClassName))
+                            table.removeChild(tableColumns[x]);
+                    }
                 }
-                weekColumnHeader.colSpan = 0;
+                weekColumnHeader.colSpan = 1;
 
                 if (yearSelectObj.selectedIndex > 0)
                 {
