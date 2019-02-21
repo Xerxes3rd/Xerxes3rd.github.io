@@ -21,6 +21,9 @@
             .table-fixed th {
                 position: sticky;
                 position: -webkit-sticky;
+                position: -moz-sticky;
+                position: -ms-sticky;
+                position: -o-sticky;
                 top: 0;
                 z-index: 999;
                 background-color: #aaa;
@@ -132,6 +135,11 @@
                     queryString = queryString.concat((queryString.length > 0 ? "&" : "") + "showExtraColumns="+showExtraColumns);
                 }
 
+                if (stickyHeaders)
+                {
+                    queryString = queryString.concat((queryString.length > 0 ? "&" : "") + "sticky");
+                }
+
                 if (queryString.length > 0)
                 {
                     retval = "?" + queryString;
@@ -214,11 +222,15 @@
                     if (node1 == tableDIV)
                     {
                         document.getElementById("scoresTable").classList.remove("table-fixed");
+                        stickyHeaders = false;
                     }
                     else
                     {
                         document.getElementById("scoresTable").classList.add("table-fixed");
+                        stickyHeaders = true;
                     }
+
+                    updateURL();
                 }
             }
 
