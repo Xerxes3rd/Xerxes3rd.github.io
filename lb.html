@@ -72,7 +72,7 @@
 
             var weekOrderHighLow = false;
             var showExtraColumns = false;
-            var stickyHeaders = false;
+            var stickyHeaders = true;
 
             function parseQuery(search)
             {
@@ -135,10 +135,10 @@
                     queryString = queryString.concat((queryString.length > 0 ? "&" : "") + "showExtraColumns="+showExtraColumns);
                 }
 
-                if (stickyHeaders)
-                {
-                    queryString = queryString.concat((queryString.length > 0 ? "&" : "") + "sticky");
-                }
+                //if (stickyHeaders)
+                //{
+                //    queryString = queryString.concat((queryString.length > 0 ? "&" : "") + "sticky");
+                //}
 
                 if (queryString.length > 0)
                 {
@@ -183,10 +183,10 @@
                     showExtraColumns = true;
                 }
                 
-                if ("sticky" in search)
-                {
+                //if ("sticky" in search)
+                //{
                     toggleStickyHeaders(false);
-                }
+                //}
 
                 showHideExtraColumns();
 
@@ -265,8 +265,10 @@
             function clearSelection(selectObj)
             {
                 selectObj.selectedIndex = 0;
-                for (i = 1; i < selectObj.options.length; i++) {
-                    selectObj.options[i] = null;
+                var i;
+                for(i = selectObj.options.length - 1; i >= 1; i--)
+                {
+                    selectObj.remove(i);
                 }
             }
 
@@ -675,10 +677,22 @@
                             cellMap[document.getElementById("columnHeaderWins").cellIndex].backcolor = "yellow";
                             cellMap[document.getElementById("columnHeaderLosses").cellIndex].backcolor = "yellow";
                         }
-
-                        Object.keys(cellMap).sort().forEach(function(key) {
+                        
+                        var lastKey = -1;
+                        var keysList = Object.keys(cellMap).sort();
+                        
+                        for (var j = 0; j < keysList.length; j++)
+                        {
+                            var key = keysList[j];
                             if (key !== 'undefined')
                             {
+                                // Skip unused columns
+                                while ((key - 1) > lastKey)
+                                {
+                                    var td_blank = row.insertCell(nextCell++);
+                                    lastKey++;
+                                }
+
                                 var disp = scoresTableHeader.cells[key].style.display;
                                 var td = row.insertCell(nextCell++);
                                 td.innerHTML = cellMap[key].innerHTML;
@@ -696,7 +710,9 @@
                                     td.className = td.className += (td.className ? " " : "") + cellMap[key].class;
                                 }
                             }
-                        });
+
+                            lastKey = key;
+                        }
 
                         startingColumn = row.cells.length + 1;
                     }
@@ -756,6 +772,7 @@
                     {
                         var scoreObj = obj[i];
                         var cellIndex = weekMap[id]["cellIndex"];
+                        var weekNum = weekMap[id]["number"];
                         if (scoreObj["player_id"] in playerMap)
                         {
                             var player = playerMap[scoreObj["player_id"]];
@@ -764,6 +781,23 @@
                             {
                                 var cell = scoresTableBody.rows[rowIndex].cells[cellIndex];
                                 cell.innerHTML = scoreObj["week_points"];
+                                if (!("wk17Points" in player))
+                                {
+                                    player["wk17Points"] = 0;
+                                }
+                                
+                                if ((weekNum >= 1) && (weekNum <= 7))
+                                {
+                                    player["wk17Points"] += Number(scoreObj["week_points"]);
+                                }
+                            }
+
+                            var wk17TH = document.getElementById("columnHeaderWeek17Points");
+                            if (wk17TH != null)
+                            {
+                                var wk17CellIndex = wk17TH.cellIndex;
+                                var cell = scoresTableBody.rows[rowIndex].cells[wk17CellIndex];
+                                cell.innerHTML = player["wk17Points"];
                             }
                         }
                     }
@@ -907,9 +941,10 @@
             <table class="table table-striped" id="scoresTable">
                 <thead>
                     <tr id="scoresTableHeader">
-                        <th rowSpan="2" id="columnHeaderNumber" onclick="toggleStickyHeaders(true)">#</th>
+                        <th rowSpan="2" id="columnHeaderNumber">#</th>
                         <th rowSpan="2" id="columnHeaderName" onclick="sortTableByID(columnHeaderName, true)">Name</th>
                         <th rowSpan="2" id="columnHeaderTotalPoints" onclick="sortTableByID(columnHeaderTotalPoints)">Total Points</th>
+                        <th rowSpan="2" id="columnHeaderWeek17Points" onclick="sortTableByID(columnHeaderWeek17Points)">Wk1-7 Points</th>
                         <th rowspan="2" class="customExtraData" style="display:none" id="columnHeaderAvgMatch" onclick="sortTableByID(columnHeaderAvgMatch)">Avg. Match</th>
                         <th rowspan="2" class="customExtraData" style="display:none" id="columnHeaderAvgThrow" onclick="sortTableByID(columnHeaderAvgThrow)">Avg. Throw</th>
                         <th rowspan="2" class="customExtraData" style="display:none" id="columnHeaderMatchesPlayed" onclick="sortTableByID(columnHeaderMatchesPlayed)">Matches Played</th>
