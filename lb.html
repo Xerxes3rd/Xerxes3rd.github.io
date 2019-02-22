@@ -171,6 +171,8 @@
                 weekColumnHeader = document.getElementById("weekColumnHeader");
                 numHeaderRows = scoresTable.rows.length;
 
+                startingColumn = weekColumnHeader["cellIndex"];
+
                 var search = parseQuery(window.location.search);
                 if (("weekOrderHighLow" in search) &&
                     (search["weekOrderHighLow"] == "true"))
@@ -442,6 +444,9 @@
                             var resultJSON = JSON.parse(this.responseText);
                             resultJSONFunc(resultJSON, resultData);
                         }
+                        else {
+                            resultJSONFunc(null, null);
+                        }
                     }
                 };
                 xmlhttp.open("POST", url, true);
@@ -640,83 +645,174 @@
                 }
             }
 
+            function createValueIfNotExist(player, valueName, value)
+            {
+                if (!(valueName in player))
+                {
+                    player[valueName] = value;
+                }
+            }
+
+            function addUpdatePlayer(playerID, playerData)
+            {
+                var newPlayer = false;
+                if (!(playerID in playerMap))
+                {
+                    playerMap[playerID] = {};
+                    newPlayer = true;
+                }
+
+                var player = playerMap[playerID];
+                var keysList = Object.keys(playerData);
+                for (var i = 0; i < keysList.length; i++)
+                {
+                    var key = keysList[i];
+                    var weekNum = playerData["weekNum"];
+
+                    if ((weekNum != null) && (
+                        (key == "avg_matches") ||
+                        (key == "avg_throws") ||
+                        (key == "matches_played") ||
+                        (key == "wins") ||
+                        (key == "losses")
+                        ))
+                    {
+                        var weekKeyName = key + "_week";
+                        if (!(weekKeyName in player))
+                        {
+                            player[weekKeyName] = {};
+                        }
+                        player[weekKeyName][weekNum] = playerData[key];
+                    }
+                    else
+                    {
+                        player[key] = playerData[key];
+                    }
+
+                    if ((key in player) && (playerData[key] != player[key]))
+                    {
+                        if (key == "points")
+                        {
+                            console.log("WARNING: Updating field " + key + " for player " + player["name"] + " " + player["lastname"] + ", id=" + playerID + " from " + player[key] + " to " + playerData[key]);
+                        }
+                    }
+                    
+                }
+
+                if (!("rowAdded" in player))
+                {
+                    var row = scoresTableBody.insertRow(-1);
+
+                    createValueIfNotExist(player, "name", "");
+                    createValueIfNotExist(player, "lastname", "");
+                    createValueIfNotExist(player, "points", 0);
+                    createValueIfNotExist(player, "avg_matches", 0);
+                    createValueIfNotExist(player, "avg_throws", 0);
+                    createValueIfNotExist(player, "matches_played", 0);
+                    createValueIfNotExist(player, "wins", 0);
+                    createValueIfNotExist(player, "losses", 0);
+
+                    //console.log("Adding rows for player " + player["name"] + " " + player["lastname"] + ", id=" + playerID);
+
+                    var nextCell = 0;
+                    var cellStyle = "";
+                    var cellInd = -1;
+
+                    var cellMap = {};
+                    cellMap[(document.getElementById("columnHeaderID") || {}).cellIndex] = {innerHTML: playerID};
+                    cellMap[(document.getElementById("columnHeaderNumber") || {}).cellIndex] = {innerHTML: ""};
+                    cellMap[(document.getElementById("columnHeaderName") || {}).cellIndex] = {innerHTML: player["name"] + " " + player["lastname"]};
+                    cellMap[(document.getElementById("columnHeaderTotalPoints") || {}).cellIndex] = {innerHTML: player["points"]};
+                    cellMap[(document.getElementById("columnHeaderAvgMatch") || {}).cellIndex] = {innerHTML: player["avg_matches"], class: customExtraDataName};
+                    cellMap[(document.getElementById("columnHeaderAvgThrow") || {}).cellIndex] = {innerHTML: player["avg_throws"], class: customExtraDataName};
+                    cellMap[(document.getElementById("columnHeaderMatchesPlayed") || {}).cellIndex] = {innerHTML: player["matches_played"], class: customExtraDataName};
+                    cellMap[(document.getElementById("columnHeaderWins") || {}).cellIndex] = {innerHTML: player["wins"], class: customExtraDataName};
+                    cellMap[(document.getElementById("columnHeaderLosses") || {}).cellIndex] = {innerHTML: player["losses"], class: customExtraDataName};
+
+                    if (document.getElementById("columnHeaderMatchesPlayed") && ((player["matches_played"] % 4) != 0))
+                    {
+                        cellMap[document.getElementById("columnHeaderMatchesPlayed").cellIndex].backcolor = "yellow";
+                    }
+
+                    if (document.getElementById("columnHeaderWins") &&
+                        document.getElementById("columnHeaderLosses") &&
+                        (player["wins"] + player["losses"] != player["matches_played"]))
+                    {
+                        cellMap[document.getElementById("columnHeaderWins").cellIndex].backcolor = "yellow";
+                        cellMap[document.getElementById("columnHeaderLosses").cellIndex].backcolor = "yellow";
+                    }
+
+                    var lastKey = -1;
+                    var keysList = Object.keys(cellMap).sort();
+                    
+                    for (var j = 0; j < keysList.length; j++)
+                    {
+                        var key = keysList[j];
+                        if (key !== 'undefined')
+                        {
+                            // Skip unused columns
+                            while ((key - 1) > lastKey)
+                            {
+                                var td_blank = row.insertCell(nextCell++);
+                                lastKey++;
+                            }
+
+                            var disp = scoresTableHeader.cells[key].style.display;
+                            var td = row.insertCell(nextCell++);
+                            td.innerHTML = cellMap[key].innerHTML;
+
+                            if ((disp != null) && (disp != ""))
+                            {
+                                td.style.display = disp;
+                            }
+                            if (cellMap[key].backcolor != null)
+                            {
+                                td.style["background-color"] = cellMap[key].backcolor;
+                            }
+                            if (cellMap[key].class != null)
+                            {
+                                td.className = td.className += (td.className ? " " : "") + cellMap[key].class;
+                            }
+                        }
+
+                        lastKey = key;
+                    }
+
+                    player["rowAdded"] = true;
+                }
+
+                if (!("weekCellsCreated" in player))
+                {
+                    if ((weekMap != null) && Object.keys(weekMap).length > 0)
+                    {
+                        //console.log("Adding " + Object.keys(weekMap).length + " week cells for player " + player["name"] + " " + player["lastname"] + ", id=" + playerID);
+                        Object.keys(weekMap).forEach(function(key) {
+                            //var test;
+                            var rowIndex = getPlayerRowIndex(playerID);
+                            if (rowIndex >= 0)
+                            {
+                                scoresTableBody.rows[rowIndex].insertCell(-1).innerHTML = "-";
+                            }
+                        });
+
+                        player["weekCellsCreated"] = true;
+                    }
+                }
+            }
+
             function processLeaderboardJSON(obj)
             {
                 if (obj != null)
                 {
                     for (var i=0; i < obj.length; i++)
                     {
-                        var player = obj[i];
-                        playerMap[player["player_id"]] = player;
-
-                        var row = scoresTableBody.insertRow(-1);
-                        player["rowIndex"] = row.rowIndex-numHeaderRows;
-                        var nextCell = 0;
-                        var cellStyle = "";
-                        var cellInd = -1;
-
-                        var cellMap = {};
-                        cellMap[(document.getElementById("columnHeaderNumber") || {}).cellIndex] = {innerHTML: i+1};
-                        cellMap[(document.getElementById("columnHeaderName") || {}).cellIndex] = {innerHTML: player["name"] + " " + player["lastname"]};
-                        cellMap[(document.getElementById("columnHeaderTotalPoints") || {}).cellIndex] = {innerHTML: player["points"]};
-                        cellMap[(document.getElementById("columnHeaderAvgMatch") || {}).cellIndex] = {innerHTML: player["avg_matches"], class: customExtraDataName};
-                        cellMap[(document.getElementById("columnHeaderAvgThrow") || {}).cellIndex] = {innerHTML: player["avg_throws"], class: customExtraDataName};
-                        cellMap[(document.getElementById("columnHeaderMatchesPlayed") || {}).cellIndex] = {innerHTML: player["matches_played"], class: customExtraDataName};
-                        cellMap[(document.getElementById("columnHeaderWins") || {}).cellIndex] = {innerHTML: player["wins"], class: customExtraDataName};
-                        cellMap[(document.getElementById("columnHeaderLosses") || {}).cellIndex] = {innerHTML: player["losses"], class: customExtraDataName};
-
-                        if (document.getElementById("columnHeaderMatchesPlayed") && ((player["matches_played"] % 4) != 0))
-                        {
-                            cellMap[document.getElementById("columnHeaderMatchesPlayed").cellIndex].backcolor = "yellow";
-                        }
-
-                        if (document.getElementById("columnHeaderWins") &&
-                            document.getElementById("columnHeaderLosses") &&
-                            (player["wins"] + player["losses"] != player["matches_played"]))
-                        {
-                            cellMap[document.getElementById("columnHeaderWins").cellIndex].backcolor = "yellow";
-                            cellMap[document.getElementById("columnHeaderLosses").cellIndex].backcolor = "yellow";
-                        }
-                        
-                        var lastKey = -1;
-                        var keysList = Object.keys(cellMap).sort();
-                        
-                        for (var j = 0; j < keysList.length; j++)
-                        {
-                            var key = keysList[j];
-                            if (key !== 'undefined')
-                            {
-                                // Skip unused columns
-                                while ((key - 1) > lastKey)
-                                {
-                                    var td_blank = row.insertCell(nextCell++);
-                                    lastKey++;
-                                }
-
-                                var disp = scoresTableHeader.cells[key].style.display;
-                                var td = row.insertCell(nextCell++);
-                                td.innerHTML = cellMap[key].innerHTML;
-
-                                if ((disp != null) && (disp != ""))
-                                {
-                                    td.style.display = disp;
-                                }
-                                if (cellMap[key].backcolor != null)
-                                {
-                                    td.style["background-color"] = cellMap[key].backcolor;
-                                }
-                                if (cellMap[key].class != null)
-                                {
-                                    td.className = td.className += (td.className ? " " : "") + cellMap[key].class;
-                                }
-                            }
-
-                            lastKey = key;
-                        }
-
-                        startingColumn = row.cells.length + 1;
+                        var playerData = obj[i];
+                        var playerID = playerData["player_id"];
+                        addUpdatePlayer(playerID, playerData);
                     }
                 }
+
+                renumberRows(true);
 
                 var json = getLocSeasonYearJSON();
                 if ((json != null) && (json.length > 0))
@@ -743,13 +839,8 @@
                         elem.classList.add("th-lower");
                         elem.innerHTML = week["number"];
                         var ch = scoresTableHeaderWeek.appendChild(elem);
-                        week["cellIndex"] = ch.cellIndex + startingColumn-1;
+                        week["cellIndex"] = ch.cellIndex + startingColumn;
                         elem.setAttribute("onclick", "sortTable("+week["cellIndex"]+")");
-
-                        Object.keys(playerMap).forEach(function(key) {
-                            var player = playerMap[key];
-                            scoresTableBody.rows[player["rowIndex"]].insertCell(-1).innerHTML = "-";
-                        });
                     }
 
                     Object.keys(weekMap).forEach(function(key) {
@@ -764,6 +855,22 @@
                 }
             }
 
+            function getPlayerRowIndex(playerID)
+            {
+                var retval = -1;
+                var cellIndex = document.getElementById("columnHeaderID").cellIndex;
+
+                for (var i = 0; i < scoresTableBody.rows.length; i++)
+                {
+                    if (Number(scoresTableBody.rows[i].cells[cellIndex].innerHTML) == playerID)
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
             function processWeekScores(obj, id)
             {
                 if (obj != null)
@@ -773,13 +880,20 @@
                         var scoreObj = obj[i];
                         var cellIndex = weekMap[id]["cellIndex"];
                         var weekNum = weekMap[id]["number"];
-                        if (scoreObj["player_id"] in playerMap)
+                        var playerID = scoreObj["player_id"];
+                        scoreObj["weekNum"] = weekNum;
+                        addUpdatePlayer(playerID, scoreObj);
+                        
+                        var player = playerMap[playerID];
+                        if (player != null)
                         {
-                            var player = playerMap[scoreObj["player_id"]];
-                            var rowIndex = player["rowIndex"];
-                            if (player != null)
+                            var rowIndex = getPlayerRowIndex(playerID);
+                            if (rowIndex >= 0)
                             {
                                 var cell = scoresTableBody.rows[rowIndex].cells[cellIndex];
+
+                                //console.log("Adding score of " + scoreObj["week_points"] + " to player " + player["name"] + " " + player["lastname"] + ", week " + weekNum + ", id=" + playerID + ", rowIndex=" + rowIndex + ", cellIndex=" + cellIndex);
+
                                 cell.innerHTML = scoreObj["week_points"];
                                 if (!("wk17Points" in player))
                                 {
@@ -790,45 +904,55 @@
                                 {
                                     player["wk17Points"] += Number(scoreObj["week_points"]);
                                 }
-                            }
 
-                            var wk17TH = document.getElementById("columnHeaderWeek17Points");
-                            if (wk17TH != null)
-                            {
-                                var wk17CellIndex = wk17TH.cellIndex;
-                                var cell = scoresTableBody.rows[rowIndex].cells[wk17CellIndex];
-                                cell.innerHTML = player["wk17Points"];
+                                var wk17TH = document.getElementById("columnHeaderWeek17Points");
+                                if (wk17TH != null)
+                                {
+                                    var wk17CellIndex = wk17TH.cellIndex;
+                                    var cell = scoresTableBody.rows[rowIndex].cells[wk17CellIndex];
+                                    cell.innerHTML = player["wk17Points"];
+                                }
                             }
                         }
                     }
                 }
+
+                //lastColSortAsc = false;
+                sortTableByID(document.getElementById("columnHeaderTotalPoints"), false, false);
             }
 
-            function sortTableByID(idName, isText)
+            function sortTableByID(idName, isText, forceascdesc = null)
             {
                 //var elem = document.getElementById(idName);
 
                 if (idName != null)
                 {
-                    sortTable(idName.cellIndex, isText);
+                    sortTable(idName.cellIndex, isText, forceascdesc);
                 }
             }
 
             var lastColSortNum = -1;
             var lastColSortAsc = true;
 
-            function sortTable(n, isText) 
+            function sortTable(n, isText, forceascdesc = null) 
             {
                 var table, rows, switching, i, x, y, shouldSwitch, switchcount = 0;
                 table = document.getElementById("scoresTableBody");
                 switching = true;
 
-                var asc = isText ? true : false;
-                if (lastColSortNum == n)
-                    asc = lastColSortAsc ? false : true;
+                if (forceascdesc == null)
+                {
+                    var asc = isText ? true : false;
+                    if (lastColSortNum == n)
+                        asc = lastColSortAsc ? false : true;
 
-                lastColSortNum = n;
-                lastColSortAsc = asc;
+                    lastColSortNum = n;
+                    lastColSortAsc = asc;
+                }
+                else
+                {
+                    asc = forceascdesc;
+                }
                 
                 /* Make a loop that will continue until
                 no switching has been done: */
@@ -942,6 +1066,7 @@
                 <thead>
                     <tr id="scoresTableHeader">
                         <th rowSpan="2" id="columnHeaderNumber">#</th>
+                        <th rowSpan="2" style="display:none" id="columnHeaderID">ID</th>
                         <th rowSpan="2" id="columnHeaderName" onclick="sortTableByID(columnHeaderName, true)">Name</th>
                         <th rowSpan="2" id="columnHeaderTotalPoints" onclick="sortTableByID(columnHeaderTotalPoints)">Total Points</th>
                         <th rowSpan="2" id="columnHeaderWeek17Points" onclick="sortTableByID(columnHeaderWeek17Points)">Wk1-7 Points</th>
