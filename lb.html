@@ -612,10 +612,16 @@
             function yearSelectChanged(fromCode)
             {
                 playerMap = {};
+                weekMap = {};
                 var tableRows = scoresTableBody.getElementsByTagName('tr');
                 var rowCount = tableRows.length;
                 for (var x=rowCount-1; x>=0; x--)
                 {
+                    var cellCount = scoresTableBody.rows[x].cells.count;
+                    for (var y=cellCount-1; y>=0; y--)
+                    {
+                        scoresTableBody.rows[x].deleteCell(y);
+                    }
                     scoresTableBody.deleteRow(x);
                 }
 
