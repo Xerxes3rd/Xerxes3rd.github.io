@@ -276,6 +276,9 @@
                 {
                     selectObj.remove(i);
                 }
+
+                selectObj.disabled = true;
+                selectObj.options[0].innerHTML = "";
             }
 
             function getCompanies()
@@ -407,6 +410,16 @@
                         selectedLocationID = search["locationid"];
                     }
 
+                    if (company["locations"].length > 0)
+                    {
+                        locationSelectObj.disabled = false;
+                        locationSelectObj.options[0].innerHTML = "Select location...";
+                    }
+                    else
+                    {
+                        locationSelectObj.options[0].innerHTML = "No locations available";
+                    }
+
                     for (var i = 0; i < company["locations"].length; i++)
                     {
                         var locObj = company["locations"][i];
@@ -436,6 +449,10 @@
                             locationSelectChanged();
                         }
                     }
+                }
+                else if (company == null)
+                {
+                    updateURL();
                 }
             }
 
@@ -491,6 +508,16 @@
                     if ("seasonid" in search)
                     {
                         selectedSeasonID = search["seasonid"];
+                    }
+
+                    if (obj.length > 0)
+                    {
+                        seasonSelectObj.disabled = false;
+                        seasonSelectObj.options[0].innerHTML = "Select season...";
+                    }
+                    else
+                    {
+                        seasonSelectObj.options[0].innerHTML = "No seasons available";
                     }
 
                     for (var i = 0; i < obj.length; i++)
@@ -559,6 +586,16 @@
                     if ("year" in search)
                     {
                         selectedYear = search["year"];
+                    }
+
+                    if (obj.length > 0)
+                    {
+                        yearSelectObj.disabled = false;
+                        yearSelectObj.options[0].innerHTML = "Select year...";
+                    }
+                    else
+                    {
+                        yearSelectObj.options[0].innerHTML = "No years available";
                     }
 
                     for (var i = 0; i < obj.length; i++)
@@ -1057,15 +1094,15 @@
             <div class="col">
                 <div class="form-inline">
                     <select class="form-control" id="companiesSelect" onchange="companiesSelectChanged()">
-                        <option text="Select company"></option>
+                        <option text="Select company">Select company...</option>
                     </select>
-                    <select class="form-control" id="locationSelect" onchange="locationSelectChanged()">
+                    <select class="form-control" id="locationSelect" onchange="locationSelectChanged()" disabled>
                         <option text="Select location"></option>
                     </select>
-                    <select class="form-control" id="seasonSelect" onchange="seasonSelectChanged()">
+                    <select class="form-control" id="seasonSelect" onchange="seasonSelectChanged()" disabled>
                         <option text="Select season"></option>
                     </select>
-                    <select class="form-control" id="yearSelect" onchange="yearSelectChanged()">
+                    <select class="form-control" id="yearSelect" onchange="yearSelectChanged()" disabled>
                         <option text="Select year"></option>
                     </select>
                 </div>
