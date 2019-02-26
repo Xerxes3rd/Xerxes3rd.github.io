@@ -765,6 +765,8 @@
                     var cellStyle = "";
                     var cellInd = -1;
 
+                    const warningColor = "yellow";
+
                     var cellMap = {};
                     cellMap[(document.getElementById("columnHeaderID") || {}).cellIndex] = {innerHTML: playerID};
                     cellMap[(document.getElementById("columnHeaderNumber") || {}).cellIndex] = {innerHTML: ""};
@@ -778,15 +780,22 @@
 
                     if (document.getElementById("columnHeaderMatchesPlayed") && ((player["matches_played"] % 4) != 0))
                     {
-                        cellMap[document.getElementById("columnHeaderMatchesPlayed").cellIndex].backcolor = "yellow";
+                        cellMap[document.getElementById("columnHeaderMatchesPlayed").cellIndex].backcolor = warningColor;
                     }
 
                     if (document.getElementById("columnHeaderWins") &&
                         document.getElementById("columnHeaderLosses") &&
                         (player["wins"] + player["losses"] != player["matches_played"]))
                     {
-                        cellMap[document.getElementById("columnHeaderWins").cellIndex].backcolor = "yellow";
-                        cellMap[document.getElementById("columnHeaderLosses").cellIndex].backcolor = "yellow";
+                        cellMap[document.getElementById("columnHeaderWins").cellIndex].backcolor = warningColor;
+                        cellMap[document.getElementById("columnHeaderLosses").cellIndex].backcolor = warningColor;
+                    }
+
+                    if (document.getElementById("columnHeaderAvgMatch") &&
+                        document.getElementById("columnHeaderAvgThrow") &&
+                        (Number(player["avg_matches"]).toFixed(2) !== (Number(player["avg_throws"] * 10.0).toFixed(2))))
+                    {
+                        cellMap[document.getElementById("columnHeaderAvgMatch").cellIndex].backcolor = warningColor;
                     }
 
                     var lastKey = -1;
