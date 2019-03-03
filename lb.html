@@ -54,13 +54,15 @@
             var seasonYearsURL = baseURL + "season-years";
             var locationWeeksURL = baseURL + "location-weeks";
             var locByWeeksURL = baseURL + "player-leaderboard-info-by-weeks";
+            var top50ByPoints = baseURL + "player-top-50-by-points-no-location";
 
-            var companiesJSON;
+            //var companiesJSON;
             var companiesMap = {};
             var seasonsMap = {};
             var yearMap = {};
             var playerMap = {};
             var weekMap = {};
+            var top50JSON = null;
 
             var companiesSelectObj;
             var locationSelectObj;
@@ -77,6 +79,7 @@
             var weekOrderHighLow = false;
             var showExtraColumns = false;
             var stickyHeaders = true;
+            var showGlobalScores = true;
 
             function parseQuery(search)
             {
@@ -196,7 +199,9 @@
 
                 showHideExtraColumns();
 
-                getCompanies();
+                //getCompanies();
+                getFromURL(companiesURL, null, processCompaniesList, null);
+                getFromURL(top50ByPoints, "", processTop50List, null);
             }
 
             function toggleStickyHeaders(triggerURLUpdate)
@@ -281,25 +286,61 @@
                 selectObj.options[0].innerHTML = "";
             }
 
-            function getCompanies()
+            function postToURL(url, postData, resultJSONFunc, resultData)
             {
-                if (companiesJSON == null)
-                {
-                    var xmlhttp = new XMLHttpRequest();
-                    xmlhttp.onreadystatechange = function() {
-                        if (this.readyState === XMLHttpRequest.DONE) {
-                            if (this.status === 200) {
-                                companiesJSON = JSON.parse(this.responseText);
-                                processCompaniesList();
-                            }
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.onreadystatechange = function() {
+                    if (this.readyState === XMLHttpRequest.DONE) {
+                        if (this.status === 200) {
+                            var resultJSON = JSON.parse(this.responseText);
+                            resultJSONFunc(resultJSON, resultData);
                         }
-                    };
-                    xmlhttp.open("GET", companiesURL, true);
-                    xmlhttp.send();
+                        else {
+                            resultJSONFunc(null, null);
+                        }
+                    }
+                };
+                if (postData != null)
+                {
+                    xmlhttp.open("POST", url, true);
+                    xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                    xmlhttp.send(postData);
+                }
+                else
+                {
+                    xmlhttp.open("GET", url, true);
+                    xmlhttp.send();                
                 }
             }
 
-            function processCompaniesList()
+            function getFromURL(url, postData, resultJSONFunc, resultData)
+            {
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.onreadystatechange = function() {
+                    if (this.readyState === XMLHttpRequest.DONE) {
+                        if (this.status === 200) {
+                            var resultJSON = JSON.parse(this.responseText);
+                            resultJSONFunc(resultJSON, resultData);
+                        }
+                        else {
+                            resultJSONFunc(null, null);
+                        }
+                    }
+                };
+                if (postData != null)
+                {
+                    xmlhttp.open("POST", url, true);
+                    xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                    xmlhttp.send(postData);
+                }
+                else
+                {
+                    xmlhttp.open("GET", url, true);
+                    xmlhttp.send();                
+                }
+            }
+
+            function processCompaniesList(companiesJSON)
             {
                 if ((companiesSelectObj != null) && (companiesJSON != null))
                 {
@@ -331,6 +372,14 @@
                         companiesSelectObj.selectedIndex = indexToSelect;
                         companiesSelectChanged();
                     }
+                }
+            }
+
+            function processTop50List(obj)
+            {
+                if (obj != null)
+                {
+                    top50JSON = obj.sort(function(a, b) { a["points"] > b["points"]});
                 }
             }
 
@@ -454,25 +503,6 @@
                 {
                     updateURL();
                 }
-            }
-
-            function postToURL(url, postData, resultJSONFunc, resultData)
-            {
-                var xmlhttp = new XMLHttpRequest();
-                xmlhttp.onreadystatechange = function() {
-                    if (this.readyState === XMLHttpRequest.DONE) {
-                        if (this.status === 200) {
-                            var resultJSON = JSON.parse(this.responseText);
-                            resultJSONFunc(resultJSON, resultData);
-                        }
-                        else {
-                            resultJSONFunc(null, null);
-                        }
-                    }
-                };
-                xmlhttp.open("POST", url, true);
-                xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                xmlhttp.send(postData);
             }
 
             function locationSelectChanged(fromCode)
@@ -743,7 +773,39 @@
                             console.log("WARNING: Updating field " + key + " for player " + player["name"] + " " + player["lastname"] + ", id=" + playerID + " from " + player[key] + " to " + playerData[key]);
                         }
                     }
-                    
+                }
+                
+                if (top50JSON != null)
+                {
+                    // Hack: try and correlate a Top 50 entry by location
+                    for (var i=0; i < top50JSON.length; i++)
+                    {
+                        var top50PlayerData = top50JSON[i];
+                        var selectedLoc = locationSelectObj.options[locationSelectObj.selectedIndex].text;
+                        var selectedCompany = companiesSelectObj.options[companiesSelectObj.selectedIndex].text;
+
+                        if ((player["name"] == top50PlayerData["name"]) &&
+                            (player["lastname"] == top50PlayerData["lastname"]) &&
+                            (selectedLoc == top50PlayerData["location_name"]) &&
+                            (selectedCompany == top50PlayerData["company"]))
+                        {
+                            player["globalRank"] = i+1;
+                            player["globalScore"] = top50PlayerData["points"];
+
+                            if (showGlobalScores)
+                            {
+                                if (document.getElementById("columnHeaderGlobalRank") != null)
+                                {
+                                    document.getElementById("columnHeaderGlobalRank").style.display = "";
+                                }
+
+                                if (document.getElementById("columnHeaderGlobalScore") != null)
+                                {
+                                    document.getElementById("columnHeaderGlobalScore").style.display = "";
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (!("rowAdded" in player))
@@ -758,6 +820,8 @@
                     createValueIfNotExist(player, "matches_played", 0);
                     createValueIfNotExist(player, "wins", 0);
                     createValueIfNotExist(player, "losses", 0);
+                    createValueIfNotExist(player, "globalRank", "");
+                    createValueIfNotExist(player, "globalScore", "");
 
                     //console.log("Adding rows for player " + player["name"] + " " + player["lastname"] + ", id=" + playerID);
 
@@ -770,6 +834,8 @@
                     var cellMap = {};
                     cellMap[(document.getElementById("columnHeaderID") || {}).cellIndex] = {innerHTML: playerID};
                     cellMap[(document.getElementById("columnHeaderNumber") || {}).cellIndex] = {innerHTML: ""};
+                    cellMap[(document.getElementById("columnHeaderGlobalRank") || {}).cellIndex] = {innerHTML: player["globalRank"]};
+                    cellMap[(document.getElementById("columnHeaderGlobalScore") || {}).cellIndex] = {innerHTML: player["globalScore"]};
                     cellMap[(document.getElementById("columnHeaderName") || {}).cellIndex] = {innerHTML: player["name"] + " " + player["lastname"]};
                     cellMap[(document.getElementById("columnHeaderTotalPoints") || {}).cellIndex] = {innerHTML: player["points"]};
                     cellMap[(document.getElementById("columnHeaderAvgMatch") || {}).cellIndex] = {innerHTML: player["avg_matches"], class: customExtraDataName};
@@ -799,7 +865,7 @@
                     }
 
                     var lastKey = -1;
-                    var keysList = Object.keys(cellMap).sort();
+                    var keysList = Object.keys(cellMap).sort(function(a, b){return a-b});
                     
                     for (var j = 0; j < keysList.length; j++)
                     {
@@ -1123,6 +1189,8 @@
                     <tr id="scoresTableHeader">
                         <th rowSpan="2" id="columnHeaderNumber">#</th>
                         <th rowSpan="2" style="display:none" id="columnHeaderID">ID</th>
+                        <th rowSpan="2" style="display:none" id="columnHeaderGlobalRank">Global Rank</th>
+                        <th rowSpan="2" style="display:none" id="columnHeaderGlobalScore">Global Score</th>
                         <th rowSpan="2" id="columnHeaderName" onclick="sortTableByID(columnHeaderName, true)">Name</th>
                         <th rowSpan="2" id="columnHeaderTotalPoints" onclick="sortTableByID(columnHeaderTotalPoints)">Total Points</th>
                         <th rowSpan="2" id="columnHeaderWeek17Points" onclick="sortTableByID(columnHeaderWeek17Points)">Wk1-7 Points</th>
