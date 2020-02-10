@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+
+<html>
+   <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- Bootstrap -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+
+        <style>
+            /* Center the loader */
+            #loader {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 1;
+            width: 150px;
+            height: 150px;
+            margin: -75px 0 0 -75px;
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 120px;
+            height: 120px;
+            -webkit-animation: spin 2s linear infinite;
+            animation: spin 2s linear infinite;
+            }
+
+            @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+            }
+
+            @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+            }
+
+            /* Add animation to "page content" */
+            .animate-bottom {
+            position: relative;
+            -webkit-animation-name: animatebottom;
+            -webkit-animation-duration: 1s;
+            animation-name: animatebottom;
+            animation-duration: 1s
+            }
+
+            @-webkit-keyframes animatebottom {
+            from { bottom:-100px; opacity:0 } 
+            to { bottom:0px; opacity:1 }
+            }
+
+            @keyframes animatebottom { 
+            from{ bottom:-100px; opacity:0 } 
+            to{ bottom:0; opacity:1 }
+            }
+
+            #myDiv {
+            display: none;
+            text-align: center;
+            }
+        </style>
+
+        <script type = "text/javascript">
+            function WebSocketTest() {
+                //wsAddr = 'wss://s-usc1c-nss-229.firebaseio.com/.ws?v=5';
+                wsAddr = 'wss://forged-7adb7.firebaseio.com/.ws?v=5';
+                var ws = new WebSocket(wsAddr);
+                var jsonData = "";
+                    
+                ws.onopen = function() {
+                    source_path = '/watl/league/official_winter_league_2020/Season2/standings';
+                    full_request = '{"t":"d","d":{"r":1,"a":"q","b":{"p":"' + source_path + '","h":""}}}';
+                    ws.send(full_request);
+                };
+                    
+                ws.onmessage = function (evt) { 
+                        var received_msg = evt.data;
+                        if (((jsonData.length == 0) && (received_msg.charAt(0) == '{')) || (jsonData.length > 0))
+                            jsonData += received_msg;
+                        console.log("Received " + evt.data.length + " bytes.");
+                        if (jsonData.length > 0) {
+                            try {
+                                var parsed = JSON.parse(jsonData);
+                                jsonData = "";
+                                var path = parsed.d.b.p;
+                                if (!path.startsWith('/'))
+                                    path = '/' + path;
+                                if (path == source_path)
+                                    handleJSON(parsed.d.b.d);
+                                    ws.close();
+                            }
+                            catch {
+                                // Ignore
+                            }
+                        }
+                };
+                    
+                ws.onclose = function() { 
+                };
+            }
+
+            function handleJSON(jsonData) {
+                toggleShowHide(document.getElementById("loader"));
+                toggleShowHide(document.getElementById("data"));
+                var table = document.getElementById("myTable");
+                for (var i in jsonData) {
+                    var data = jsonData[i];
+
+                    var row = table.insertRow(table.rows.length);
+                    var cellInd = 0;
+                    var first = row.insertCell(cellInd++);
+                    var last = row.insertCell(cellInd++);
+                    var email = row.insertCell(cellInd++);
+                    var scoreavg = row.insertCell(cellInd++);
+
+                    first.innerHTML = data.first;
+                    last.innerHTML = data.last;
+                    email.innerHTML = data.email;
+                    scoreavg.innerHTML = data.scoreavg;
+                }
+            }
+
+            function onBodyLoad() {
+                WebSocketTest();
+            }
+
+            function toggleShowHide(x) {
+                if (x.style.display === "none") {
+                    x.style.display = "block";
+                } else {
+                    x.style.display = "none";
+                }
+            }
+        </script>
+    </head>
+   
+    <body onload="onBodyLoad()">
+    <!--
+        <div id = "sse">
+            <a href = "javascript:WebSocketTest()">Run WebSocket</a>
+        </div>
+    -->
+        <div class="loader" id="loader"></div>
+        <div id="data" style="display: none;">
+            <table id="myTable" class="table">
+                <thead>
+                    <tr>
+                        <th>First</th>
+                        <th>Last</th>
+                        <th>E-mail</th>
+                        <th>Average Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>
